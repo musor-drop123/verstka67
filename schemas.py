@@ -3,12 +3,27 @@ import datetime
 class Token(BaseModel):
     id: str 
     exp: datetime.datetime
-class StudentLoginData(BaseModel):
+class StudentSignUpData(BaseModel):
     name: str
     surname: str
     password: str
-    grade: str
+    is_admin: str
 class TeacherLoginData(BaseModel):
     name: str 
     surname: str 
     password: str
+    admin_code: str
+class LogInUser(BaseModel):
+    name: str 
+    password: str
+class Task(BaseModel):
+    name: str
+    number: str
+    diff: str 
+    text: str 
+    answer: str 
+    description: str
+class AiSchema(BaseModel):
+    code: str
+    task: str
+    comment: str
