@@ -10,7 +10,7 @@ dsn = os.getenv("PG_DSN")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from db import create_tasks_db, create_users_db
-    app.state.conn = await asyncpg.connect(dsn=dsn)
+    app.state.conn = await asyncpg.create_pool(dsn=dsn)
     await create_users_db(app.state.conn)
     await create_tasks_db(app.state.conn)
     yield 

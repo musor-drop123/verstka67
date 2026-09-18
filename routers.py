@@ -63,7 +63,7 @@ async def signup(data: StudentSignUpData, request: Request):
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     db = get_db(request)
     password = await asyncio.to_thread(hash_pw, data.password)
-    await create_user(db, id, data.name, data.surname, str(password), "False")
+    await create_user(db, id, data.name, data.surname, password.decode(), "False")
     return response
 @router.get("/profile")
 async def get_profile(request: Request, user_id=Depends(get_user)):
@@ -116,7 +116,7 @@ async def admin_signup(data: TeacherLoginData, request: Request):
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     db = get_db(request)
     password = await asyncio.to_thread(hash_pw, data.password)
-    await create_user(db, id, data.name, data.surname, str(password), "True")
+    await create_user(db, id, data.name, data.surname, password.decode(), "True")
     return response
 
 @router.post("/login/admin")
