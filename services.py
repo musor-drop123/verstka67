@@ -23,9 +23,8 @@ async def decode_refresh_token(token):
 
 
 def hash_pw(password):
-    passwordb = base64.encode(password)
     salt = bcrypt.gensalt()
-    hash = bcrypt.hashpw(passwordb, salt)
+    hash = bcrypt.hashpw(password.encode(), salt)
     return hash
 def check_pw(password, hashed_password):
     return bcrypt.checkpw(password, hashed_password=hashed_password)

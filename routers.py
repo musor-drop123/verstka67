@@ -5,8 +5,8 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.security import APIKeyCookie
 import httpx
 from replicate.client import Client
-from schemas import AiSchema, StudentSignUpData, Task, TeacherLoginData, Token, LogInUser
-import datetime
+from schemas import StudentSignUpData, Task, TeacherLoginData, Token, LogInUser
+from datetime import datetime
 from services import create_access_token, create_refresh_token, decode_refresh_token, hash_pw, check_pw, decode_access_token, admin_code, proxy_url
 import uuid, jwt
 from db import create_user, create_task, get_task_by_id, get_tasks_by_number, get_user_by_id, get_user_by_name
@@ -47,7 +47,7 @@ async def get_refresh_user(token=Depends(refresh_cookie_sheme)):
     
 router = APIRouter()
 
-@router.get("/signup")
+@router.post("/signup")
 async def signup(data: StudentSignUpData, request: Request):
     from main import get_db
     id = str(uuid.uuid4())
@@ -71,8 +71,10 @@ async def get_profile(request: Request, user_id=Depends(get_user)):
     user_data = get_user_by_id(db, str(user_id))
     return user_data
 @router.get("/refresh")
-async def refresh(user_id=Depends(refresh_cookie_sheme)):
-    response = RedirectResponse("/main")
+async def refresh(token=Depends(refresh_cookie_sheme)):
+    response = RedirectResponse("/")
+    decoded_token = await decode_refresh_token(token)
+    user_id = decoded_token["id"]
     access_token = await create_access_token(user_id)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     return response
@@ -100,7 +102,7 @@ async def admin_signup(data: TeacherLoginData, request: Request):
     if data.admin_code != admin_code:
         raise HTTPException(status_code=401)
     id = str(uuid.uuid4())
-    response = RedirectResponse(url="/admin/main")
+    response = RedirectResponse(url="/admin/")
     access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     payload_access = Token(id=id, exp=access_exp).model_dump()
@@ -122,7 +124,7 @@ async def login(data: LogInUser, request: Request):
     user_data = await get_user_by_name(db, data.name)
     if not check_pw(data.password, user_data["password"]):
         return RedirectResponse("/signup")
-    response = RedirectResponse("/admin/main")
+    response = RedirectResponse("/admin/")
     id = user_data["id"]
     access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
@@ -140,13 +142,13 @@ async def add_task(data: Task, request: Request, user_id=Depends(get_admin)):
     id = str(uuid.uuid4())
     await create_task(db, id, data.name,data.number, data.diff, data.text, data.answer, data.description)
     return {"status": "successful"}
-@router.get("/main/tasks/{id}")
+@router.get("/tasks/{id}")
 async def get_task(id, request: Request, user=Depends(get_user)):
     from main import get_db
     db = get_db(request)
     task = await get_task_by_id(db, id)
     return task 
-@router.get("main/tasks")
+@router.get("/tasks")
 async def get_task(number, request: Request, user=Depends(get_user)):
     from main import get_db
     db = get_db(request)
@@ -166,7 +168,7 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
     await ws.accept()
     try: 
         while True:
-            data = ws.receive_json()
+            data = await ws.receive_json()
             input = {
                 "system_prompt": "Тебе на вход подаются: условие задачи, код ученика (может быть пустым) и комментарий ученика. Тебе нужно ответить на вопросы ученика и помочь ему с решением (решать полностью задачу нельзя, только подсказки и обьяснения). Если запрос ученика не связан с информатикой, то отвечай, что ты можешь помочь только с информатикой. Также твой ответ не должен быть длиннее 500 символов",
                 "prompt": f"Условие задачи: {data["task"]} Код ученика: {data["code"]} Комментарий ученика: {data["comment"]}",
