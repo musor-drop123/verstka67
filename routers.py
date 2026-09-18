@@ -1,6 +1,7 @@
 import asyncio
 import logging
-
+import dotenv
+dotenv.load_dotenv()
 from fastapi import APIRouter, HTTPException, Request, Depends, WebSocket, WebSocketDisconnect, WebSocketException
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import APIKeyCookie
@@ -89,8 +90,8 @@ async def login(data: LogInUser, request: Request):
     user_data = await get_user_by_name(db, data.name)
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
-        return RedirectResponse("/signup")
-    response = RedirectResponse("/static/index.html")
+        return RedirectResponse("/signup", status_code=303)
+    response = RedirectResponse("/static/index.html", status_code=303)
     id = user_data["id"]
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
@@ -183,11 +184,11 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
                 "prompt": f"Условие задачи: {data["task"]} Код ученика: {data["code"]} Комментарий ученика: {data["comment"]}",
                 "max_tokens": 500
             }
-            transport = httpx.HTTPTransport(proxy=httpx.Proxy(url=proxy_url))
+            transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
             client = Client(transport=transport)
             
-            async for event in client.async_stream("qwen/qwen3-7-plus", input=input):
-                await ws.send_text(event)
+            async for event in (await client.async_stream("qwen/qwen3-7-plus", input=input)):
+                await ws.send_text(event.data)
     except WebSocketDisconnect:
         logging.debug("websocket connection closed")
 
