@@ -50,22 +50,21 @@ async def get_refresh_user(token=Depends(refresh_cookie_sheme)):
 router = APIRouter()
 
 @router.post("/signup")
-async def signup(data: StudentSignUpData, request: Request):
+async def signup(data: StudentSignUpData, request: Request, response: Response):
     from main import get_db
     id = str(uuid.uuid4())
-    response = RedirectResponse(url="/static/index.html", status_code=303)
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
-    payload_access = Token(id=id, exp=access_exp).model_dump()
-    payload_refresh = Token(id=id, exp=refresh_exp).model_dump()
+    payload_access = Token(id=id, is_admin="False", exp=access_exp).model_dump()
+    payload_refresh = Token(id=id, is_admin="False", exp=refresh_exp).model_dump()
     access_token = await create_access_token(payload_access)
     refresh_token = await create_refresh_token(payload_refresh)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     db = get_db(request)
     password = await asyncio.to_thread(hash_pw, data.password)
-    await create_user(db, id, data.name, data.surname, password.decode(), "False")
-    return response
+    await create_user(db, id, data.user_name, data.name, password.decode(), "False")
+    return {"status": "successful"}
 @router.get("/profile")
 async def get_profile(request: Request, user_id=Depends(get_user)):
     from main import get_db
@@ -73,78 +72,73 @@ async def get_profile(request: Request, user_id=Depends(get_user)):
     user_data = await get_user_by_id(db, str(user_id))
     return user_data
 @router.get("/refresh")
-async def refresh(token=Depends(refresh_cookie_sheme)):
-    response = RedirectResponse("/")
-    
+async def refresh(response: Response, token=Depends(refresh_cookie_sheme)):    
     decoded_token = await decode_refresh_token(token)
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     id = decoded_token["id"]
-    payload_access = Token(id=id, exp=access_exp).model_dump()
+    is_admin = decoded_token["is_admin"]
+    payload_access = Token(id=id, is_admin=is_admin, exp=access_exp).model_dump()
     access_token = await create_access_token(payload_access)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
-    return response
+    return {"status": "successful"}
 @router.post("/login")
-async def login(data: LogInUser, request: Request):
+async def login(data: LogInUser, request: Request, response: Response):
     from main import get_db
     db = get_db(request)
-    user_data = await get_user_by_name(db, data.name)
+    user_data = await get_user_by_name(db, data.user_name)
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
-        return RedirectResponse("/signup", status_code=303)
-    response = RedirectResponse("/static/index.html", status_code=303)
+        raise HTTPException(status_code=403)
     id = user_data["id"]
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
-    payload_access = Token(id=id, exp=access_exp).model_dump()
-    payload_refresh = Token(id=id, exp=refresh_exp).model_dump()
+    payload_access = Token(id=id, is_admin="False", exp=access_exp).model_dump()
+    payload_refresh = Token(id=id, is_admin="False", exp=refresh_exp).model_dump()
     access_token = await create_access_token(payload_access)
     refresh_token = await create_refresh_token(payload_refresh)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
-    return response
+    return {"status": "successful"}
 @router.post("/signup/admin")
-async def admin_signup(data: TeacherLoginData, request: Request):
+async def admin_signup(data: TeacherLoginData, request: Request, response: Response):
     from main import get_db
     if data.admin_code != admin_code:
         raise HTTPException(status_code=401)
     id = str(uuid.uuid4())
-    response = RedirectResponse(url="/static/index.html", status_code=303)
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
-    payload_access = Token(id=id, exp=access_exp).model_dump()
-    payload_refresh = Token(id=id, exp=refresh_exp).model_dump()
-    payload_access["is_admin"] = "True"
+    payload_access = Token(id=id, is_admin="True", exp=access_exp).model_dump()
+    payload_refresh = Token(id=id, is_admin="True", exp=refresh_exp).model_dump()
     access_token = await create_access_token(payload_access)
     refresh_token = await create_refresh_token(payload_refresh)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     db = get_db(request)
     password = await asyncio.to_thread(hash_pw, data.password)
-    await create_user(db, id, data.name, data.surname, password.decode(), "True")
-    return response
+    await create_user(db, id, data.user_name, data.name, password.decode(), "True")
+    return {"status":"successful"}
 
 @router.post("/login/admin")
-async def login(data: TeacherLoginData, request: Request):
+async def login(data: TeacherLoginData, request: Request, response: Response):
     from main import get_db
     from services import admin_code
     db = get_db(request)
     if data.admin_code != admin_code:
         raise HTTPException(status_code=403)
-    user_data = await get_user_by_name(db, data.name)
+    user_data = await get_user_by_name(db, data.user_name)
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
-        return RedirectResponse("/signup")
-    response = RedirectResponse("/admin/")
+        return HTTPException(status_code=403)
     id = user_data["id"]
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
-    payload_access = Token(id=id, exp=access_exp)
-    payload_refresh = Token(id=id, exp=refresh_exp)
+    payload_access = Token(id=id, is_admin="True", exp=access_exp).model_dump()
+    payload_refresh = Token(id=id, is_admin="True", exp=refresh_exp).model_dump()
     access_token = await create_access_token(payload_access)
     refresh_token = await create_refresh_token(payload_refresh)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
-    return response
+    return {"status": "successful"}
 @router.post("/admin/add_task")
 async def add_task(data: Task, request: Request, user_id=Depends(get_admin)):
     from main import get_db

@@ -2,15 +2,15 @@ from pydantic import BaseModel
 import datetime
 class Token(BaseModel):
     id: str 
+    is_admin: str
     exp: datetime.datetime
 class StudentSignUpData(BaseModel):
+    user_name: str
     name: str
-    surname: str
     password: str
-    is_admin: str
 class TeacherLoginData(BaseModel):
+    user_name: str 
     name: str 
-    surname: str 
     password: str
     admin_code: str
 class LogInUser(BaseModel):

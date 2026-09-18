@@ -3,8 +3,8 @@ async def create_users_db(db: Connection) :
     await db.execute("""
         CREATE TABLE IF NOT EXISTS users(
             id TEXT PRIMARY KEY,
+            user_name TEXT UNIQUE,
             name TEXT,
-            surname TEXT,
             password TEXT,
             is_admin TEXT
         );
@@ -46,7 +46,7 @@ async def get_tasks_by_number(db: Connection, number):
         """, str(number))
     data = dict(data)
     return data
-async def create_user(db: Connection, id,name ,surname ,password ,is_admin ):
-    await db.execute("""INSERT INTO users VALUES ($1, $2, $3, $4, $5);""", id,name ,surname ,password ,is_admin )
+async def create_user(db: Connection, id,user_name ,name ,password ,is_admin ):
+    await db.execute("""INSERT INTO users VALUES ($1, $2, $3, $4, $5);""", id,user_name ,name ,password ,is_admin )
 async def create_task(db: Connection, id, name, number, diff, text, answer, description):
     await db.execute("""INSERT INTO tasks VALUES ($1, $2, $3, $4, $5, $6, $7)""", id, name, number, diff, text, answer, description)
