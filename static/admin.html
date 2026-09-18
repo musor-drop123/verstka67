@@ -20,10 +20,17 @@
     <div id="authSection" class="card form-page" style="margin-top:20px;">
       <div id="loginBlock">
         <h1>Вход для преподавателя</h1>
+        <p class="hint" style="margin-top:-8px;">
+          Вход проверяется вместе с кодом доступа — введите те же данные, что и при регистрации.
+        </p>
+        <label>Фамилия</label>
+        <input type="text" id="loginSurname" />
         <label>Имя пользователя</label>
         <input type="text" id="loginName" />
         <label>Пароль</label>
         <input type="password" id="loginPassword" />
+        <label>Код доступа администратора</label>
+        <input type="text" id="loginAdminCode" />
         <button id="loginBtn" style="margin-top:20px;width:100%;">Войти</button>
         <div class="error-msg" id="loginError"></div>
         <div class="hint">

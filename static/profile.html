@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Профиль — learnhub</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot">●</span> learnhub</div>
+    <nav>
+      <a href="/static/tasks.html">Задания</a>
+      <a href="#" id="logoutLink">Выйти</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <h1>Профиль</h1>
+    <div class="card" id="profileCard" style="max-width:480px;">
+      <div class="hint">Загрузка…</div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    (async () => {
+      const profile = await requireAuth();
+      const card = document.getElementById("profileCard");
+
+      if (!profile || Object.keys(profile).length === 0) {
+        card.innerHTML = `
+          <div class="error-msg" style="margin:0;">
+            Не удалось загрузить данные профиля. Попробуйте обновить страницу.
+          </div>`;
+        return;
+      }
+
+      const initials = ((profile.name || "?")[0] || "?").toUpperCase();
+      const isAdmin = profile.is_admin === "True" || profile.is_admin === true;
+
+      card.innerHTML = `
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+          <div style="width:56px; height:56px; border-radius:50%; background:var(--accent);
+                      display:flex; align-items:center; justify-content:center;
+                      font-size:22px; font-weight:700; color:white; flex-shrink:0;">
+            ${escapeHtml(initials)}
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:700;">
+              ${escapeHtml(profile.name || "")} ${escapeHtml(profile.surname || "")}
+            </div>
+            <div class="hint" style="margin-top:2px;">
+              ${isAdmin ? "Преподаватель" : "Ученик"}
+            </div>
+          </div>
+        </div>
+        <table class="admin-table">
+          <tr><th>Имя</th><td>${escapeHtml(profile.name || "—")}</td></tr>
+          <tr><th>Фамилия</th><td>${escapeHtml(profile.surname || "—")}</td></tr>
+          <tr><th>ID пользователя</th><td style="font-family:monospace; font-size:12px;">${escapeHtml(profile.id || "—")}</td></tr>
+          <tr><th>Роль</th><td>${isAdmin ? "Преподаватель" : "Ученик"}</td></tr>
+        </table>
+        ${isAdmin ? `<div class="hint" style="margin-top:16px;">
+          <a href="/static/admin.html">Перейти в панель администратора →</a>
+        </div>` : ""}
+      `;
+    })();
+
+    document.getElementById("logoutLink").addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+  </script>
+</body>
+</html>

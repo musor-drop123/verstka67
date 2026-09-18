@@ -28,8 +28,6 @@ async function requireAuth() {
     window.location.href = "/static/login.html";
     return null;
   }
-  // /profile на бэке иногда отдаёт битые данные (см. известный баг с необёрнутым
-  // await в get_user_by_id), поэтому опираемся только на код ответа, а не на тело.
   if (!res.ok) return null;
   try {
     return await res.json();

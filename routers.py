@@ -107,7 +107,7 @@ async def admin_signup(data: TeacherLoginData, request: Request):
     if data.admin_code != admin_code:
         raise HTTPException(status_code=401)
     id = str(uuid.uuid4())
-    response = RedirectResponse(url="/admin/")
+    response = RedirectResponse(url="/static/index.html", status_code=303)
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     payload_access = Token(id=id, exp=access_exp).model_dump()

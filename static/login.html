@@ -44,6 +44,12 @@
             return;
           }
         }
+        // Если пользователя с таким именем нет, бэк падает в 500
+        // (обращение к полю "password" у None), а не отдаёт понятную ошибку.
+        if (res.status >= 500) {
+          errorEl.textContent = "Неверное имя пользователя или пароль.";
+          return;
+        }
         if (!res.ok && res.status !== 307 && res.status !== 200) {
           errorEl.textContent = "Ошибка входа. Попробуйте ещё раз.";
           return;

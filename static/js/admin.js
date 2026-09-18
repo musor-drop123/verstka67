@@ -1,13 +1,8 @@
-// ---------- Проверка, залогинен ли уже админ ----------
-(async () => {
-  const res = await apiGet("/profile");
-  if (res.ok) {
-    // Не можем достоверно проверить именно is_admin здесь (профиль не отдаёт это поле
-    // из-за del data["password"] в get_user_by_id, но is_admin в схеме тоже не гарантирован
-    // на возврате) — просто показываем панель, а реальную проверку прав делает /admin/add_task.
-    showAdminPanel();
-  }
-})();
+// Раньше здесь была автоматическая проверка /profile и показ панели при любой
+// активной сессии — это было ошибкой: наличие валидного access_token у ОБЫЧНОГО
+// ученика тоже даёт 200 от /profile, и админ-панель показывалась не проверяя
+// права. Теперь показываем панель только после успешного /login/admin или
+// /signup/admin — единственных мест, где право admin реально проверяется бэком.
 
 document.getElementById("showSignupLink").addEventListener("click", (e) => {
   e.preventDefault();
@@ -21,18 +16,35 @@ document.getElementById("showLoginLink").addEventListener("click", (e) => {
 });
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
+  const surname = document.getElementById("loginSurname").value.trim();
   const name = document.getElementById("loginName").value.trim();
   const password = document.getElementById("loginPassword").value;
+  const admin_code = document.getElementById("loginAdminCode").value.trim();
   const errorEl = document.getElementById("loginError");
   errorEl.textContent = "";
 
+  if (!surname || !name || !password || !admin_code) {
+    errorEl.textContent = "Заполните все поля, включая код доступа.";
+    return;
+  }
+
   try {
-    const res = await apiPost("/login/admin", { name, password });
-    if (res.redirected && res.url.includes("/signup")) {
-      errorEl.textContent = "Неверные учётные данные.";
+    const res = await apiPost("/login/admin", { name, surname, password, admin_code });
+    if (res.status === 403) {
+      errorEl.textContent = "Неверный код доступа администратора.";
       return;
     }
-    if (!res.ok && res.status !== 307) {
+    if (res.redirected && res.url.includes("/signup")) {
+      errorEl.textContent = "Неверное имя пользователя или пароль.";
+      return;
+    }
+    // Если пользователь с таким именем не найден, бэк падает в 500
+    // (обращение к полю "password" у None), а не отдаёт понятную ошибку.
+    if (res.status >= 500) {
+      errorEl.textContent = "Неверное имя пользователя или пароль.";
+      return;
+    }
+    if (!res.ok && res.status !== 307 && res.status !== 200) {
       errorEl.textContent = "Ошибка входа.";
       return;
     }
