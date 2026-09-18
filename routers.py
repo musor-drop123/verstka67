@@ -7,7 +7,7 @@ from fastapi.security import APIKeyCookie
 import httpx
 from replicate.client import Client
 from schemas import StudentSignUpData, Task, TeacherLoginData, Token, LogInUser
-from datetime import datetime
+import datetime
 from services import create_access_token, create_refresh_token, decode_refresh_token, hash_pw, check_pw, decode_access_token, admin_code, proxy_url
 import uuid, jwt
 from db import create_user, create_task, get_task_by_id, get_tasks_by_number, get_user_by_id, get_user_by_name
@@ -52,9 +52,9 @@ router = APIRouter()
 async def signup(data: StudentSignUpData, request: Request):
     from main import get_db
     id = str(uuid.uuid4())
-    response = RedirectResponse(url="/main")
-    access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
-    refresh_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
+    response = RedirectResponse(url="/static/index.html", status_code=303)
+    access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
+    refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     payload_access = Token(id=id, exp=access_exp).model_dump()
     payload_refresh = Token(id=id, exp=refresh_exp).model_dump()
     access_token = await create_access_token(payload_access)
@@ -76,7 +76,7 @@ async def refresh(token=Depends(refresh_cookie_sheme)):
     response = RedirectResponse("/")
     
     decoded_token = await decode_refresh_token(token)
-    access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
+    access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     id = decoded_token["id"]
     payload_access = Token(id=id, exp=access_exp).model_dump()
     access_token = await create_access_token(payload_access)
@@ -90,10 +90,10 @@ async def login(data: LogInUser, request: Request):
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
         return RedirectResponse("/signup")
-    response = RedirectResponse("/main")
+    response = RedirectResponse("/static/index.html")
     id = user_data["id"]
-    access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
-    refresh_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
+    access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
+    refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     payload_access = Token(id=id, exp=access_exp).model_dump()
     payload_refresh = Token(id=id, exp=refresh_exp).model_dump()
     access_token = await create_access_token(payload_access)
@@ -108,8 +108,8 @@ async def admin_signup(data: TeacherLoginData, request: Request):
         raise HTTPException(status_code=401)
     id = str(uuid.uuid4())
     response = RedirectResponse(url="/admin/")
-    access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
-    refresh_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
+    access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
+    refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     payload_access = Token(id=id, exp=access_exp).model_dump()
     payload_refresh = Token(id=id, exp=refresh_exp).model_dump()
     payload_access["is_admin"] = "True"
@@ -123,17 +123,20 @@ async def admin_signup(data: TeacherLoginData, request: Request):
     return response
 
 @router.post("/login/admin")
-async def login(data: LogInUser, request: Request):
+async def login(data: TeacherLoginData, request: Request):
     from main import get_db
+    from services import admin_code
     db = get_db(request)
+    if data.admin_code != admin_code:
+        raise HTTPException(status_code=403)
     user_data = await get_user_by_name(db, data.name)
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
         return RedirectResponse("/signup")
     response = RedirectResponse("/admin/")
     id = user_data["id"]
-    access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
-    refresh_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
+    access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
+    refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     payload_access = Token(id=id, exp=access_exp)
     payload_refresh = Token(id=id, exp=refresh_exp)
     access_token = await create_access_token(payload_access)
