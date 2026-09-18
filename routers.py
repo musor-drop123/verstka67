@@ -128,7 +128,7 @@ async def login(data: TeacherLoginData, request: Request, response: Response):
     user_data = await get_user_by_name(db, data.user_name)
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
-        return HTTPException(status_code=403)
+        raise HTTPException(status_code=403)
     id = user_data["id"]
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     refresh_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
