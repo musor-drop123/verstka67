@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Регистрация — learnhub</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="container form-page card">
+    <h1>Регистрация в <span style="color:var(--accent)">learnhub</span></h1>
+    <form id="signupForm">
+      <label for="name">Имя</label>
+      <input type="text" id="name" required />
+
+      <label for="surname">Фамилия</label>
+      <input type="text" id="surname" required />
+
+      <label for="password">Пароль</label>
+      <input type="password" id="password" required autocomplete="new-password" />
+
+      <button type="submit" style="margin-top:20px; width:100%;">Создать аккаунт</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </form>
+    <div class="hint">Уже есть аккаунт? <a href="/static/login.html">Войти</a></div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const surname = document.getElementById("surname").value.trim();
+      const password = document.getElementById("password").value;
+      const errorEl = document.getElementById("errorMsg");
+      errorEl.textContent = "";
+
+      try {
+        const res = await apiPost("/signup", { name, surname, password, is_admin: "False" });
+        if (!res.ok) {
+          errorEl.textContent = "Не удалось зарегистрироваться. Возможно, такое имя уже занято.";
+          return;
+        }
+        window.location.href = "/static/tasks.html";
+      } catch (err) {
+        errorEl.textContent = "Не удалось связаться с сервером.";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Задания — learnhub</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot">●</span> learnhub</div>
+    <nav>
+      <a href="/static/tasks.html">Задания</a>
+      <a href="#" id="logoutLink">Выйти</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <h1>Задания ЕГЭ по информатике</h1>
+    <p class="hint" style="margin-top:-8px;">
+      Выбери номер задания ЕГЭ (1–27). Нажми «+», чтобы получить новую случайную задачу этого номера.
+    </p>
+
+    <div class="task-grid" id="taskGrid"></div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    (async () => {
+      await requireAuth();
+
+      const grid = document.getElementById("taskGrid");
+      // Заданий в ЕГЭ по информатике 27 номеров
+      for (let n = 1; n <= 27; n++) {
+        const tile = document.createElement("div");
+        tile.className = "task-tile add-tile";
+        tile.innerHTML = `№${n}<span style="font-size:16px;margin-left:6px;">＋</span>`;
+        tile.title = `Получить новую задачу №${n}`;
+        tile.addEventListener("click", () => fetchNewTask(n));
+        grid.appendChild(tile);
+      }
+    })();
+
+    async function fetchNewTask(number) {
+      try {
+        const res = await apiGet(`/tasks?number=${number}`);
+        if (res.status === 401) {
+          window.location.href = "/static/login.html";
+          return;
+        }
+        // Если задач с таким номером нет в базе, бэк падает с 500
+        // (dict(None) на пустом результате fetchrow), а не отдаёт 404 —
+        // поэтому трактуем любой не-200 как "заданий пока нет".
+        if (!res.ok) {
+          alert(`Задач №${number} пока нет в базе, либо сервер временно недоступен.`);
+          return;
+        }
+        const task = await res.json();
+        if (!task || !task.id) {
+          alert(`Задач №${number} пока нет в базе.`);
+          return;
+        }
+        window.location.href = `/static/task.html?id=${encodeURIComponent(task.id)}`;
+      } catch (err) {
+        alert("Ошибка сети при получении задачи.");
+      }
+    }
+
+    document.getElementById("logoutLink").addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+  </script>
+</body>
+</html>

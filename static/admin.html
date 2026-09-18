@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Админка — learnhub</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot">●</span> learnhub <span class="badge">админ</span></div>
+    <nav>
+      <a href="#" id="logoutLink" class="hidden">Выйти</a>
+    </nav>
+  </div>
+
+  <div class="container">
+
+    <!-- Блок входа/регистрации админа -->
+    <div id="authSection" class="card form-page" style="margin-top:20px;">
+      <div id="loginBlock">
+        <h1>Вход для преподавателя</h1>
+        <label>Имя пользователя</label>
+        <input type="text" id="loginName" />
+        <label>Пароль</label>
+        <input type="password" id="loginPassword" />
+        <button id="loginBtn" style="margin-top:20px;width:100%;">Войти</button>
+        <div class="error-msg" id="loginError"></div>
+        <div class="hint">
+          Нет аккаунта преподавателя?
+          <a href="#" id="showSignupLink">Зарегистрироваться по коду доступа</a>
+        </div>
+      </div>
+
+      <div id="signupBlock" class="hidden">
+        <h1>Регистрация преподавателя</h1>
+        <label>Имя</label>
+        <input type="text" id="suName" />
+        <label>Фамилия</label>
+        <input type="text" id="suSurname" />
+        <label>Пароль</label>
+        <input type="password" id="suPassword" />
+        <label>Код доступа администратора</label>
+        <input type="text" id="suAdminCode" />
+        <button id="signupBtn" style="margin-top:20px;width:100%;">Зарегистрироваться</button>
+        <div class="error-msg" id="signupError"></div>
+        <div class="hint"><a href="#" id="showLoginLink">Назад ко входу</a></div>
+      </div>
+    </div>
+
+    <!-- Блок управления заданиями (показывается после входа) -->
+    <div id="adminPanel" class="hidden">
+      <div class="card" style="margin-bottom:24px;">
+        <h2 style="margin-top:0;">Добавить задание</h2>
+        <label>Название задания</label>
+        <input type="text" id="taskName" placeholder="Например: Обработка массива" />
+
+        <label>Номер задания ЕГЭ (1–27)</label>
+        <input type="text" id="taskNumber" placeholder="Например: 15" />
+
+        <label>Сложность</label>
+        <select id="taskDiff">
+          <option value="easy">Лёгкая</option>
+          <option value="medium">Средняя</option>
+          <option value="hard">Сложная</option>
+        </select>
+
+        <label>Условие задачи (HTML)</label>
+        <textarea id="taskText" rows="8" placeholder="<p>Условие задачи в формате HTML...</p>"></textarea>
+        <div class="hint" style="margin-top:6px;">
+          Поддерживается HTML-разметка (параграфы, списки, code-блоки, изображения по ссылке).
+          Предпросмотр — справа.
+        </div>
+
+        <label>Правильный ответ</label>
+        <input type="text" id="taskAnswer" placeholder="Ожидаемый ответ ученика" />
+
+        <label>Описание / пояснение к решению (для справки, ученику не показывается напрямую)</label>
+        <textarea id="taskDescription" rows="4"></textarea>
+
+        <div style="display:flex; gap:20px; margin-top:20px;">
+          <div style="flex:1;">
+            <button id="submitTaskBtn" style="width:100%;">Добавить задание</button>
+            <div class="error-msg" id="taskFormMsg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Предпросмотр условия</h2>
+        <div class="task-statement" id="taskPreview">
+          <em style="color:var(--text-dim)">Начните вводить условие — предпросмотр появится здесь.</em>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h2 style="margin-top:0;">Просмотр случайного задания по номеру</h2>
+        <p class="hint" style="margin-top:-6px;">
+          Отдельного эндпоинта со списком всех заданий в текущем бэкенде нет —
+          можно посмотреть одно случайное задание для заданного номера, чтобы проверить, что оно сохранилось.
+        </p>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="peekNumber" placeholder="Номер, например 15" style="max-width:160px;" />
+          <button class="secondary" id="peekBtn">Показать</button>
+        </div>
+        <div id="peekResult" style="margin-top:16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

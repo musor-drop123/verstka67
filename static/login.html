@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Вход — learnhub</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="container form-page card">
+    <h1>Вход в <span style="color:var(--accent)">learnhub</span></h1>
+    <form id="loginForm">
+      <label for="name">Имя пользователя</label>
+      <input type="text" id="name" required autocomplete="username" />
+
+      <label for="password">Пароль</label>
+      <input type="password" id="password" required autocomplete="current-password" />
+
+      <button type="submit" style="margin-top:20px; width:100%;">Войти</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </form>
+    <div class="hint">
+      Нет аккаунта? <a href="/static/signup.html">Зарегистрироваться</a><br />
+      Вы преподаватель? <a href="/static/admin.html">Вход для админов</a>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const password = document.getElementById("password").value;
+      const errorEl = document.getElementById("errorMsg");
+      errorEl.textContent = "";
+
+      try {
+        const res = await apiPost("/login", { name, password });
+        // Бэк всегда отвечает редиректом (200/307), даже при неверном пароле (редиректит на /signup).
+        // Поэтому проверяем, куда нас в итоге привело, через финальный URL ответа.
+        if (res.redirected) {
+          if (res.url.includes("/signup")) {
+            errorEl.textContent = "Неверное имя пользователя или пароль.";
+            return;
+          }
+        }
+        if (!res.ok && res.status !== 307 && res.status !== 200) {
+          errorEl.textContent = "Ошибка входа. Попробуйте ещё раз.";
+          return;
+        }
+        window.location.href = "/static/tasks.html";
+      } catch (err) {
+        errorEl.textContent = "Не удалось связаться с сервером.";
+      }
+    });
+  </script>
+</body>
+</html>

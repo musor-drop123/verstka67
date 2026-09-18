@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Задача — learnhub</title>
+<link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot">●</span> learnhub</div>
+    <nav>
+      <span id="taskBadge" class="badge"></span>
+      <a href="/static/tasks.html">Все задания</a>
+      <a href="#" id="logoutLink">Выйти</a>
+    </nav>
+  </div>
+
+  <div class="workspace">
+    <div class="pane">
+      <h2 id="taskTitle">Загрузка задачи…</h2>
+      <div class="task-statement" id="taskStatement"></div>
+
+      <div class="answer-row">
+        <input type="text" id="answerInput" placeholder="Введите ответ..." />
+        <button id="checkAnswerBtn">Проверить</button>
+      </div>
+      <div class="error-msg" id="answerResult"></div>
+    </div>
+
+    <div class="pane">
+      <h2>Код (Python)</h2>
+      <textarea class="code-editor" id="codeEditor" spellcheck="false"
+        placeholder="# Пиши код здесь и запускай кнопкой ниже"></textarea>
+      <div class="run-row">
+        <button id="runBtn">▶ Запустить</button>
+        <button class="secondary" id="clearConsoleBtn">Очистить вывод</button>
+        <span class="hint" id="pyodideStatus" style="margin:0;">Загрузка Python…</span>
+      </div>
+      <div class="console-output" id="consoleOutput">Вывод программы появится здесь.</div>
+
+      <div class="chat-box">
+        <h3 style="margin-bottom:8px;">Спросить ИИ <span class="badge">объясняет, не решает</span></h3>
+        <div class="chat-log" id="chatLog"></div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="Что тебе непонятно в задаче или в твоём коде?"></textarea>
+          <button id="chatSendBtn">Отправить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <!-- Pyodide: полноценный Python (WASM) в браузере, без файловой системы и терминала -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+  <script src="/static/js/task.js"></script>
+</body>
+</html>
