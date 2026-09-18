@@ -74,9 +74,11 @@ async def get_profile(request: Request, user_id=Depends(get_user)):
 @router.get("/refresh")
 async def refresh(token=Depends(refresh_cookie_sheme)):
     response = RedirectResponse("/")
+    access_exp = datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
+    id = decoded_token["id"]
+    payload_access = Token(id=id, exp=access_exp).model_dump()
     decoded_token = await decode_refresh_token(token)
-    user_id = decoded_token["id"]
-    access_token = await create_access_token(user_id)
+    access_token = await create_access_token(payload_access)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     return response
 @router.post("/login")
@@ -180,7 +182,7 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
             transport = httpx.HTTPTransport(proxy=httpx.Proxy(url=proxy_url))
             client = Client(transport=transport)
             
-            for event in client.stream("qwen/qwen3-7-plus", input=input):
+            for event in client.async_stream("qwen/qwen3-7-plus", input=input):
                 await ws.send_text(event)
     except WebSocketDisconnect:
         logging.debug("websocket connection closed")
