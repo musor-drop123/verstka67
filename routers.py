@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from fastapi import APIRouter, HTTPException, Request, Depends, WebSocket, WebSocketDisconnect, WebSocketException
@@ -61,14 +62,14 @@ async def signup(data: StudentSignUpData, request: Request):
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     db = get_db(request)
-    password= hash_pw(data.password)
-    await create_user(db, id, data.name, data.surname, password, "False")
+    password = await asyncio.to_thread(hash_pw, data.password)
+    await create_user(db, id, data.name, data.surname, str(password), "False")
     return response
 @router.get("/profile")
 async def get_profile(request: Request, user_id=Depends(get_user)):
     from main import get_db
     db = get_db(request)
-    user_data = get_user_by_id(db, str(user_id))
+    user_data = await get_user_by_id(db, str(user_id))
     return user_data
 @router.get("/refresh")
 async def refresh(token=Depends(refresh_cookie_sheme)):
@@ -83,7 +84,8 @@ async def login(data: LogInUser, request: Request):
     from main import get_db
     db = get_db(request)
     user_data = await get_user_by_name(db, data.name)
-    if not check_pw(data.password, user_data["password"]):
+    is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
+    if not is_valid:
         return RedirectResponse("/signup")
     response = RedirectResponse("/main")
     id = user_data["id"]
@@ -113,8 +115,8 @@ async def admin_signup(data: TeacherLoginData, request: Request):
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     db = get_db(request)
-    password= hash_pw(data.password)
-    await create_user(db, id, data.name, data.surname, password, "True")
+    password = await asyncio.to_thread(hash_pw, data.password)
+    await create_user(db, id, data.name, data.surname, str(password), "True")
     return response
 
 @router.post("/login/admin")
@@ -122,7 +124,8 @@ async def login(data: LogInUser, request: Request):
     from main import get_db
     db = get_db(request)
     user_data = await get_user_by_name(db, data.name)
-    if not check_pw(data.password, user_data["password"]):
+    is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
+    if not is_valid:
         return RedirectResponse("/signup")
     response = RedirectResponse("/admin/")
     id = user_data["id"]
