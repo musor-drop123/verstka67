@@ -40,6 +40,12 @@ async def get_task_by_id(db: Connection, id):
         """, str(id))
     data = dict(data)
     return data 
+async def get_answer_by_id(db: Connection, id):
+    data = await db.fetchrow("""
+            SELECT answer FROM tasks WHERE id = $1;
+        """, str(id))
+    data = dict(data)
+    return data 
 async def get_tasks_by_number(db: Connection, number):
     data = await db.fetchrow("""
             SELECT * FROM tasks WHERE number = $1 ORDER BY random() LIMIT 1;

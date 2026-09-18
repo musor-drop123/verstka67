@@ -11,7 +11,7 @@ from schemas import StudentSignUpData, Task, TeacherLoginData, Token, LogInUser
 import datetime
 from services import create_access_token, create_refresh_token, decode_refresh_token, hash_pw, check_pw, decode_access_token, admin_code, proxy_url
 import uuid, jwt
-from db import create_user, create_task, get_task_by_id, get_tasks_by_number, get_user_by_id, get_user_by_name
+from db import create_user, create_task, get_answer_by_id, get_task_by_id, get_tasks_by_number, get_user_by_id, get_user_by_name
 access_cookie_sheme = APIKeyCookie(name="access_token")
 refresh_cookie_sheme = APIKeyCookie(name="refresh_token")
 async def get_admin(token=Depends(access_cookie_sheme)):
@@ -152,6 +152,14 @@ async def get_task(id, request: Request, user=Depends(get_user)):
     db = get_db(request)
     task = await get_task_by_id(db, id)
     return task 
+@router.get("/tasks/{id}/check")
+async def get_task(id, answer, request: Request, user=Depends(get_user)):
+    from main import get_db
+    db = get_db(request)
+    task = await get_answer_by_id(db, id)
+    if answer != task["answer"]:
+        return {"status": "False"}
+    return {"status": "True"}
 @router.get("/tasks")
 async def get_task(number, request: Request, user=Depends(get_user)):
     from main import get_db
