@@ -27,4 +27,4 @@ def hash_pw(password):
     hash = bcrypt.hashpw(password.encode(), salt)
     return hash
 def check_pw(password, hashed_password):
-    return bcrypt.checkpw(password, hashed_password=hashed_password)
+    return bcrypt.checkpw(password.encode(), hashed_password=hashed_password)

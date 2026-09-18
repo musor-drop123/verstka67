@@ -1,7 +1,7 @@
 from asyncpg import Connection
 async def create_users_db(db: Connection) :
     await db.execute("""
-        CREATE TABLE users IF NOT EXISTS (
+        CREATE TABLE IF NOT EXISTS users(
             id TEXT PRIMARY KEY,
             name TEXT,
             surname TEXT,
@@ -11,7 +11,7 @@ async def create_users_db(db: Connection) :
     """)
 async def create_tasks_db(db: Connection):
     await db.execute("""
-        CREATE TABLE tasks IF NOT EXISTS (
+        CREATE TABLE IF NOT EXISTS tasks(
             id TEXT PRIMARY KEY,
             name TEXT,
             number TEXT,
