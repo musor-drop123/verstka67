@@ -147,13 +147,14 @@ async def add_task(data: Task, request: Request, user_id=Depends(get_admin)):
     await create_task(db, id, data.name,data.number, data.diff, data.text, data.answer, data.description)
     return {"status": "successful"}
 @router.get("/tasks/{id}")
-async def get_task(id, request: Request, user=Depends(get_user)):
+async def get_task_id(id, request: Request, user=Depends(get_user)):
     from main import get_db
     db = get_db(request)
     task = await get_task_by_id(db, id)
+    del task["answer"]
     return task 
 @router.get("/tasks/{id}/check")
-async def get_task(id, answer, request: Request, user=Depends(get_user)):
+async def get_task_check(id, answer, request: Request, user=Depends(get_user)):
     from main import get_db
     db = get_db(request)
     task = await get_answer_by_id(db, id)
@@ -165,6 +166,7 @@ async def get_task(number, request: Request, user=Depends(get_user)):
     from main import get_db
     db = get_db(request)
     data = await get_tasks_by_number(db, number)
+    del data["answer"]
     return data
 async def get_ws_user(ws: WebSocket):
     token = ws.cookies.get("access_token")

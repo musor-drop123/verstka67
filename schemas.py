@@ -14,7 +14,7 @@ class TeacherLoginData(BaseModel):
     password: str
     admin_code: str
 class LogInUser(BaseModel):
-    name: str 
+    user_name: str 
     password: str
 class Task(BaseModel):
     name: str
