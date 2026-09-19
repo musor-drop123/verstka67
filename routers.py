@@ -82,7 +82,7 @@ async def refresh(response: Response, token=Depends(refresh_cookie_sheme)):
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     return {"status": "successful"}
 @router.post("/login")
-async def login(data: LogInUser, request: Request, response: Response):
+async def login_user(data: LogInUser, request: Request, response: Response):
     from main import get_db
     db = get_db(request)
     user_data = await get_user_by_name(db, data.user_name)
@@ -191,8 +191,8 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
             transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
             client = Client(transport=transport)
             
-            async for event in (await client.async_stream("qwen/qwen3-7-plus", input=input)):
-                await ws.send_text(event.data)
+            output = await client.async_run("qwen/qwen3-7-plus", input=input)
+            await ws.send_text("".join(output))
     except WebSocketDisconnect:
         logging.debug("websocket connection closed")
 
