@@ -147,14 +147,14 @@ async def add_task(data: Task, request: Request, user_id=Depends(get_admin)):
     await create_task(db, id, data.name,data.number, data.diff, data.text, data.answer, data.description)
     return {"status": "successful"}
 @router.get("/tasks/{id}")
-async def get_task_id(id, request: Request, user=Depends(get_user)):
+async def get_task_id(id, request: Request):
     from main import get_db
     db = get_db(request)
     task = await get_task_by_id(db, id)
     del task["answer"]
     return task 
 @router.get("/tasks/{id}/check")
-async def get_task_check(id, answer, request: Request, user=Depends(get_user)):
+async def get_task_check(id, answer, request: Request):
     from main import get_db
     db = get_db(request)
     task = await get_answer_by_id(db, id)
@@ -162,7 +162,7 @@ async def get_task_check(id, answer, request: Request, user=Depends(get_user)):
         return {"status": "False"}
     return {"status": "True"}
 @router.get("/tasks")
-async def get_task(number, request: Request, user=Depends(get_user)):
+async def get_task(number, request: Request):
     from main import get_db
     db = get_db(request)
     data = await get_tasks_by_number(db, number)
@@ -183,16 +183,21 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
     try: 
         while True:
             data = await ws.receive_json()
-            input = {
+            if len(data["code"]) > 1000:
+                await ws.send_text("Извини, но твой код ОООООЧЕНЬ длинный, я не могу его обработать")
+            elif len(data["comment"]) > 400:
+                await ws.send_text("Можешь пж покороче обьяснить чем тебе помочь, твой запрос оч длинный")
+            else:
+                input = {
                 "system_prompt": "Тебе на вход подаются: условие задачи, код ученика (может быть пустым) и комментарий ученика. Тебе нужно ответить на вопросы ученика и помочь ему с решением (решать полностью задачу нельзя, только подсказки и обьяснения). Если запрос ученика не связан с информатикой, то отвечай, что ты можешь помочь только с информатикой. Также твой ответ не должен быть длиннее 600 символов. В ответе можешь использовать html теги для переноса строки/выделения текста и проч, чтобы ответ отображался красиво",
                 "prompt": f"Условие задачи: {data["task"]} Код ученика: {data["code"]} Комментарий ученика: {data["comment"]}",
                 "max_tokens": 500
-            }
-            transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
-            client = Client(transport=transport)
+                }
+                transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
+                client = Client(transport=transport)
             
-            output = await client.async_run("qwen/qwen3-7-plus", input=input)
-            await ws.send_text("".join(output))
+                output = await client.async_run("qwen/qwen3-7-plus", input=input)
+                await ws.send_text("".join(output))
     except WebSocketDisconnect:
         logging.debug("websocket connection closed")
 
