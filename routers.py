@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import dotenv
+from limit import limiter
 dotenv.load_dotenv()
 from fastapi import APIRouter, HTTPException, Request, Depends, WebSocket, WebSocketDisconnect, WebSocketException
 from fastapi.responses import RedirectResponse, Response
@@ -48,7 +49,7 @@ async def get_refresh_user(token=Depends(refresh_cookie_sheme)):
         )
     
 router = APIRouter()
-
+@limiter.limit("5/minute")
 @router.post("/signup")
 async def signup(data: StudentSignUpData, request: Request, response: Response):
     from main import get_db
@@ -65,14 +66,16 @@ async def signup(data: StudentSignUpData, request: Request, response: Response):
     password = await asyncio.to_thread(hash_pw, data.password)
     await create_user(db, id, data.user_name, data.name, password.decode(), "False")
     return {"status": "successful"}
+@limiter.limit("5/minute")
 @router.get("/profile")
 async def get_profile(request: Request, user_id=Depends(get_user)):
     from main import get_db
     db = get_db(request)
     user_data = await get_user_by_id(db, str(user_id))
     return user_data
+@limiter.limit("5/minute")
 @router.get("/refresh")
-async def refresh(response: Response, token=Depends(refresh_cookie_sheme)):    
+async def refresh(response: Response, request: Request, token=Depends(refresh_cookie_sheme)):    
     decoded_token = await decode_refresh_token(token)
     access_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
     id = decoded_token["id"]
@@ -81,6 +84,7 @@ async def refresh(response: Response, token=Depends(refresh_cookie_sheme)):
     access_token = await create_access_token(payload_access)
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     return {"status": "successful"}
+@limiter.limit("5/minute")
 @router.post("/login")
 async def login_user(data: LogInUser, request: Request, response: Response):
     from main import get_db
@@ -99,6 +103,7 @@ async def login_user(data: LogInUser, request: Request, response: Response):
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     return {"status": "successful"}
+@limiter.limit("5/minute")
 @router.post("/signup/admin")
 async def admin_signup(data: TeacherLoginData, request: Request, response: Response):
     from main import get_db
@@ -117,7 +122,7 @@ async def admin_signup(data: TeacherLoginData, request: Request, response: Respo
     password = await asyncio.to_thread(hash_pw, data.password)
     await create_user(db, id, data.user_name, data.name, password.decode(), "True")
     return {"status":"successful"}
-
+@limiter.limit("5/minute")
 @router.post("/login/admin")
 async def login(data: TeacherLoginData, request: Request, response: Response):
     from main import get_db
@@ -139,6 +144,7 @@ async def login(data: TeacherLoginData, request: Request, response: Response):
     response.set_cookie(httponly=True, key="access_token", value=access_token, samesite="lax", expires=60*15)
     response.set_cookie(httponly=True, key="refresh_token", value=refresh_token, samesite="lax", expires=24*60*30*60)
     return {"status": "successful"}
+@limiter.limit("5/minute")
 @router.post("/admin/add_task")
 async def add_task(data: Task, request: Request, user_id=Depends(get_admin)):
     from main import get_db
@@ -146,6 +152,7 @@ async def add_task(data: Task, request: Request, user_id=Depends(get_admin)):
     id = str(uuid.uuid4())
     await create_task(db, id, data.name,data.number, data.diff, data.text, data.answer, data.description)
     return {"status": "successful"}
+@limiter.limit("5/minute")
 @router.get("/tasks/{id}")
 async def get_task_id(id, request: Request):
     from main import get_db
@@ -153,6 +160,7 @@ async def get_task_id(id, request: Request):
     task = await get_task_by_id(db, id)
     del task["answer"]
     return task 
+@limiter.limit("5/minute")
 @router.get("/tasks/{id}/check")
 async def get_task_check(id, answer, request: Request):
     from main import get_db
@@ -161,6 +169,7 @@ async def get_task_check(id, answer, request: Request):
     if answer != task["answer"]:
         return {"status": "False"}
     return {"status": "True"}
+@limiter.limit("5/minute")
 @router.get("/tasks")
 async def get_task(number, request: Request):
     from main import get_db
@@ -193,11 +202,12 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
                 "prompt": f"Условие задачи: {data["task"]} Код ученика: {data["code"]} Комментарий ученика: {data["comment"]}",
                 "max_tokens": 500
                 }
-                transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
-                client = Client(transport=transport)
-            
-                output = await client.async_run("qwen/qwen3-7-plus", input=input)
-                await ws.send_text("".join(output))
+                if proxy_url:
+                    transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
+                    client = Client(transport=transport)
+                
+                    output = await client.async_run("qwen/qwen3-7-plus", input=input)
+                    await ws.send_text("".join(output))
     except WebSocketDisconnect:
         logging.debug("websocket connection closed")
 
