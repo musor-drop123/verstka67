@@ -33,24 +33,32 @@ async def get_user_by_name(db: Pool, name):
     data = await db.fetchrow("""
         SELECT * FROM users WHERE user_name = $1;
     """, name)
+    if not data:
+        return None
     data = dict(data)
     return data 
 async def get_task_by_id(db: Pool, id):
     data = await db.fetchrow("""
             SELECT * FROM tasks WHERE id = $1;
         """, str(id))
+    if not data:
+        return None
     data = dict(data)
     return data 
 async def get_answer_by_id(db: Pool, id):
     data = await db.fetchrow("""
             SELECT answer FROM tasks WHERE id = $1;
         """, str(id))
+    if not data:
+        return None
     data = dict(data)
     return data 
 async def get_tasks_by_number(db: Pool, number):
     data = await db.fetchrow("""
             SELECT * FROM tasks WHERE number = $1 ORDER BY random() LIMIT 1;
         """, str(number))
+    if not (data):
+        return None
     data = dict(data)
     return data
 async def create_user(db: Pool, id,user_name ,name ,password ,is_admin ):

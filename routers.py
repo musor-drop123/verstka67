@@ -93,6 +93,8 @@ async def login_user(data: LogInUser, request: Request, response: Response):
     from main import get_db
     db = get_db(request)
     user_data = await get_user_by_name(db, data.user_name)
+    if not (user_data):
+        raise HTTPException(404, detail="Такого юзера увы нет")
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
         raise HTTPException(status_code=403)
@@ -134,6 +136,8 @@ async def login(data: TeacherLoginData, request: Request, response: Response):
     if data.admin_code != admin_code:
         raise HTTPException(status_code=403)
     user_data = await get_user_by_name(db, data.user_name)
+    if not (user_data):
+        raise HTTPException(404, detail="Такого юзера увы нет")
     is_valid = await asyncio.to_thread(check_pw, data.password, user_data["password"])
     if not is_valid:
         raise HTTPException(status_code=403)
@@ -181,6 +185,8 @@ async def get_task_check(id, answer, request: Request):
     from main import get_db
     db = get_db(request)
     task = await get_answer_by_id(db, id)
+    if not (task):
+        raise HTTPException(404, detail="Такой задачи увы нет")
     if answer != task["answer"]:
         return {"status": "False"}
     return {"status": "True"}
