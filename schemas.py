@@ -10,7 +10,6 @@ class StudentSignUpData(BaseModel):
     password: str
 class TeacherLoginData(BaseModel):
     user_name: str 
-    name: str 
     password: str
     admin_code: str
 class LogInUser(BaseModel):

@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import os
 import dotenv
+import aiofiles
 from limit import limiter
 dotenv.load_dotenv()
-from fastapi import APIRouter, HTTPException, Request, Depends, WebSocket, WebSocketDisconnect, WebSocketException
+from fastapi import APIRouter, HTTPException, Request, Depends, UploadFile, WebSocket, WebSocketDisconnect, WebSocketException
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import APIKeyCookie
 import httpx
@@ -146,7 +148,17 @@ async def login(data: TeacherLoginData, request: Request, response: Response):
     return {"status": "successful"}
 @limiter.limit("5/minute")
 @router.post("/admin/add_task")
-async def add_task(data: Task, request: Request, user_id=Depends(get_admin)):
+async def add_task(data: Task, files: list[UploadFile] | None, request: Request, user_id=Depends(get_admin)):
+    if files:
+        for file in files:
+            filename = file.filename()
+            filename = os.path.basename()
+            path = os.path.join("static", filename)
+            if os.path.isfile(path):
+                raise HTTPException(status_code=502, detail=f"Файл с названием {filename} уже есть на сервере")
+            async with aiofiles.open(path, "wb") as f:
+                while content := await file.read(1024 * 1024):  
+                    await f.write(content) 
     from main import get_db
     db = get_db(request)
     id = str(uuid.uuid4())
@@ -198,9 +210,9 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
                 await ws.send_text("Можешь пж покороче обьяснить чем тебе помочь, твой запрос оч длинный")
             else:
                 input = {
-                "system_prompt": "Тебе на вход подаются: условие задачи, код ученика (может быть пустым) и комментарий ученика. Тебе нужно ответить на вопросы ученика и помочь ему с решением (решать полностью задачу нельзя, только подсказки и обьяснения). Если запрос ученика не связан с информатикой, то отвечай, что ты можешь помочь только с информатикой. Также твой ответ не должен быть длиннее 600 символов. В ответе можешь использовать html теги для переноса строки/выделения текста и проч, чтобы ответ отображался красиво",
-                "prompt": f"Условие задачи: {data["task"]} Код ученика: {data["code"]} Комментарий ученика: {data["comment"]}",
-                "max_tokens": 500
+                "system_prompt": "Тебе на вход подаются: условие задачи, код ученика (может быть пустым) и комментарий/вопрос ученика. Тебе нужно ответить на вопросы ученика и помочь ему с задачей. Если запрос ученика не связан с информатикой, то отвечай, что ты можешь помочь только с информатикой. Также твой ответ не должен быть длиннее 600 символов. В ответе можешь использовать html теги для переноса строки/выделения текста и проч, чтобы ответ отображался красиво. Если задачу можно решать кодом, то обьясняй как решать ее кодом",
+                "prompt": f"Условие задачи: {data["task"]} Код ученика: {data["code"]} Комментарий/вопрос ученика: {data["comment"]}",
+                "max_tokens": 600
                 }
                 if proxy_url:
                     transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
