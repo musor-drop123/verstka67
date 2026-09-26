@@ -26,11 +26,12 @@ async def get_user_by_id(db: Pool, id):
         SELECT * FROM users WHERE id = $1;
     """, id)
     data = dict(data)
-    del data["password"]
+    if data:
+        del data["password"]
     return data 
 async def get_user_by_name(db: Pool, name):
     data = await db.fetchrow("""
-        SELECT * FROM users WHERE name = $1;
+        SELECT * FROM users WHERE user_name = $1;
     """, name)
     data = dict(data)
     return data 

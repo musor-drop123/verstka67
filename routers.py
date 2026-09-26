@@ -1,16 +1,17 @@
 import asyncio
 import logging
 import os
+from typing import Annotated
 import dotenv
 import aiofiles
 from limit import limiter
 dotenv.load_dotenv()
-from fastapi import APIRouter, HTTPException, Request, Depends, UploadFile, WebSocket, WebSocketDisconnect, WebSocketException
+from fastapi import APIRouter, File, Form, HTTPException, Request, Depends, UploadFile, WebSocket, WebSocketDisconnect, WebSocketException
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import APIKeyCookie
 import httpx
 from replicate.client import Client
-from schemas import StudentSignUpData, Task, TeacherLoginData, Token, LogInUser
+from schemas import StudentSignUpData, Task, TeacherLoginData, TeacherSignUpData, Token, LogInUser
 import datetime
 from services import create_access_token, create_refresh_token, decode_refresh_token, hash_pw, check_pw, decode_access_token, admin_code, proxy_url
 import uuid, jwt
@@ -107,7 +108,7 @@ async def login_user(data: LogInUser, request: Request, response: Response):
     return {"status": "successful"}
 @limiter.limit("5/minute")
 @router.post("/signup/admin")
-async def admin_signup(data: TeacherLoginData, request: Request, response: Response):
+async def admin_signup(data: TeacherSignUpData, request: Request, response: Response):
     from main import get_db
     if data.admin_code != admin_code:
         raise HTTPException(status_code=401)
@@ -148,11 +149,11 @@ async def login(data: TeacherLoginData, request: Request, response: Response):
     return {"status": "successful"}
 @limiter.limit("5/minute")
 @router.post("/admin/add_task")
-async def add_task(data: Task, files: list[UploadFile] | None, request: Request, user_id=Depends(get_admin)):
+async def add_task(request: Request, data: Annotated[Task, Form()], files: list[UploadFile]=File(default=[]), user_id=Depends(get_admin)):
     if files:
         for file in files:
-            filename = file.filename()
-            filename = os.path.basename()
+            filename = file.filename
+            filename = os.path.basename(filename)
             path = os.path.join("static", filename)
             if os.path.isfile(path):
                 raise HTTPException(status_code=502, detail=f"Файл с названием {filename} уже есть на сервере")
@@ -170,6 +171,8 @@ async def get_task_id(id, request: Request):
     from main import get_db
     db = get_db(request)
     task = await get_task_by_id(db, id)
+    if not (task):
+        raise HTTPException(404, detail="Такой задачи увы нет")
     del task["answer"]
     return task 
 @limiter.limit("5/minute")
@@ -187,6 +190,8 @@ async def get_task(number, request: Request):
     from main import get_db
     db = get_db(request)
     data = await get_tasks_by_number(db, number)
+    if not (data):
+        raise HTTPException(404, detail="Такой задачи увы нет")
     del data["answer"]
     return data
 async def get_ws_user(ws: WebSocket):

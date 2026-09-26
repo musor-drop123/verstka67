@@ -12,6 +12,11 @@ class TeacherLoginData(BaseModel):
     user_name: str 
     password: str
     admin_code: str
+class TeacherSignUpData(BaseModel):
+    name: str
+    user_name: str 
+    password: str
+    admin_code: str
 class LogInUser(BaseModel):
     user_name: str 
     password: str
