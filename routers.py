@@ -153,7 +153,8 @@ async def login(data: TeacherLoginData, request: Request, response: Response):
     return {"status": "successful"}
 @limiter.limit("5/minute")
 @router.post("/admin/add_task")
-async def add_task(request: Request, data: Annotated[Task, Form()], files: list[UploadFile]=File(default=[]), user_id=Depends(get_admin)):
+async def add_task(request: Request, files: list[UploadFile]=File(default=[]), user_id=Depends(get_admin)):
+    data = Task(**dict(await request.form()))
     if files:
         for file in files:
             filename = file.filename
