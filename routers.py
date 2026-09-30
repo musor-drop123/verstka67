@@ -227,8 +227,8 @@ async def explain_task(ws: WebSocket, user_id=Depends(get_ws_user)):
                 "max_tokens": 600
                 }
                 if proxy_url:
-                    transport = httpx.AsyncHTTPTransport(proxy=httpx.Proxy(url=proxy_url))
-                    client = Client(transport=transport)
+                    
+                    client = Client(proxy=proxy_url, trust_env=False)
                 
                     output = await client.async_run("qwen/qwen3-7-plus", input=input)
                     await ws.send_text("".join(output))
